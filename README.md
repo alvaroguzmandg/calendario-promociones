@@ -20,18 +20,41 @@ La vista muestra promociones en calendario mensual entre el 1 de enero de 2026 y
 
 ## Deploy en Vercel
 
-La app puede correr en Vercel como herramienta web. Para que las promos sean compartidas entre usuarios, configurar una base Redis REST compatible con Vercel KV / Upstash.
+La app puede correr en Vercel como herramienta web. Para que las promos sean compartidas entre usuarios, configurar una base compartida. La opcion recomendada si Redis/KV requiere plan pago es Supabase Free.
+
+### Opcion recomendada: Supabase
 
 Variables de entorno esperadas en Vercel:
 
 ```text
-KV_REST_API_URL
-KV_REST_API_TOKEN
+SUPABASE_URL
+SUPABASE_SERVICE_ROLE_KEY
 ```
 
-Tambien se aceptan estos nombres si se usa Upstash directamente:
+Crear esta tabla en Supabase SQL Editor:
+
+```sql
+create table if not exists public.promos (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  start_date date not null,
+  end_date date not null,
+  country text not null,
+  channel text not null,
+  branches text,
+  link_url text,
+  notes text,
+  created_at timestamptz not null default now()
+);
+```
+
+### Opcion alternativa: Redis REST
+
+Tambien se aceptan estas variables si se usa Vercel KV / Upstash:
 
 ```text
+KV_REST_API_URL
+KV_REST_API_TOKEN
 UPSTASH_REDIS_REST_URL
 UPSTASH_REDIS_REST_TOKEN
 ```

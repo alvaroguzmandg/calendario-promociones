@@ -52,6 +52,7 @@
     currentDate: clampMonth(new Date(2026, 4, 26)),
     adminUnlocked: sessionStorage.getItem("promoAdminUnlocked") === "true",
     promos: [],
+    apiEnabled: location.protocol.startsWith("http") && !location.hostname.includes("sharepoint.com"),
     sharePointEnabled: Boolean(window._spPageContextInfo) || location.hostname.includes("sharepoint.com"),
   };
 
@@ -117,6 +118,13 @@
     }
 
     try {
+      if (state.apiEnabled) {
+        const data = await fetchApiPromos();
+        state.promos = data.promos;
+        setMessage(data.mode === "shared" ? "" : "Modo demo. Configurá Vercel KV para guardar promos compartidas.");
+        return;
+      }
+
       const items = await fetchSharePointItems();
       state.promos = items.map(fromSharePointItem);
       setMessage("");
@@ -240,6 +248,21 @@
     }
 
     if (!state.sharePointEnabled) {
+      if (state.apiEnabled) {
+        try {
+          setMessage("Guardando...");
+          const saved = await createApiPromo(promo);
+          state.promos.push(saved);
+          els.form.reset();
+          setMessage("Promoción guardada.");
+          render();
+        } catch (error) {
+          console.error(error);
+          setMessage("No se pudo guardar. Configurá Vercel KV para persistencia compartida.");
+        }
+        return;
+      }
+
       promo.id = `local-${Date.now()}`;
       state.promos.push(promo);
       els.form.reset();
@@ -271,6 +294,28 @@
     if (!response.ok) throw new Error(`SharePoint read failed: ${response.status}`);
     const data = await response.json();
     return data.value || data.d?.results || [];
+  }
+
+  async function fetchApiPromos() {
+    const response = await fetch("/api/promos", {
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) throw new Error(`API read failed: ${response.status}`);
+    return response.json();
+  }
+
+  async function createApiPromo(promo) {
+    const response = await fetch("/api/promos", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(promo),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || `API create failed: ${response.status}`);
+    return data.promo;
   }
 
   async function createSharePointItem(payload) {

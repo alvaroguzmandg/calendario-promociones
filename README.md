@@ -12,9 +12,40 @@ La vista muestra promociones en calendario mensual entre el 1 de enero de 2026 y
 
 - `index.html`, `styles.css`, `app.js`: version estatica separada.
 - `calendario-promos-standalone.html`: version estatica autocontenida.
+- `api/promos.js`: API serverless para Vercel con persistencia en Redis REST compatible con Vercel KV / Upstash.
+- `vercel.json`: configuracion de deploy Vercel.
 - `calendario-promos-spfx/`: proyecto SharePoint Framework.
 - `calendario-promos-spfx/sharepoint/solution/calendario-promos-spfx.sppkg`: paquete instalable.
 - `SHAREPOINT_SPFX_PLAN.md`: paso a paso para publicar en SharePoint.
+
+## Deploy en Vercel
+
+La app puede correr en Vercel como herramienta web. Para que las promos sean compartidas entre usuarios, configurar una base Redis REST compatible con Vercel KV / Upstash.
+
+Variables de entorno esperadas en Vercel:
+
+```text
+KV_REST_API_URL
+KV_REST_API_TOKEN
+```
+
+Tambien se aceptan estos nombres si se usa Upstash directamente:
+
+```text
+UPSTASH_REDIS_REST_URL
+UPSTASH_REDIS_REST_TOKEN
+```
+
+Sin esas variables, la app carga en modo demo y no persiste promos compartidas.
+
+Pasos:
+
+1. Importar el repo `alvaroguzmandg/calendario-promociones` en Vercel.
+2. Framework preset: `Other`.
+3. Build command: vacio.
+4. Output directory: vacio / raiz del proyecto.
+5. Agregar las variables de entorno anteriores.
+6. Deploy.
 
 ## Enfoque recomendado
 

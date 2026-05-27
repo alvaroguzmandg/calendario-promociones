@@ -114,6 +114,17 @@ h2 {
   font-weight: 800;
 }
 
+.danger-button {
+  min-height: 40px;
+  border: 1px solid #b42318;
+  border-radius: 6px;
+  padding: 0 18px;
+  background: #b42318;
+  color: white;
+  cursor: pointer;
+  font-weight: 800;
+}
+
 .primary-button:hover {
   background: var(--primary-strong);
 }
@@ -393,6 +404,7 @@ dialog::backdrop {
 .dialog-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
 }
 

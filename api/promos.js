@@ -129,6 +129,21 @@ async function updateSupabasePromo(promo) {
   return { promo: toClientPromo(rows[0]) };
 }
 
+async function deleteSupabasePromo(id) {
+  if (!id) {
+    return { error: 'Falta el id de la promocion.' };
+  }
+
+  await supabaseRequest(`promos?id=eq.${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: {
+      Prefer: 'return=minimal'
+    }
+  });
+
+  return { ok: true };
+}
+
 async function readPromos() {
   const supabase = supabaseConfig();
   if (supabase.url && supabase.key) {
@@ -205,8 +220,31 @@ async function updatePromo(promo) {
   return { promo: nextPromos.find((item) => String(item.id) === String(promo.id)) };
 }
 
+async function deletePromo(id) {
+  const supabase = supabaseConfig();
+  if (supabase.url && supabase.key) {
+    return deleteSupabasePromo(id);
+  }
+
+  const { token, url } = redisConfig();
+  if (!url || !token) {
+    return {
+      error: 'La API esta en modo demo. Configura SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY, o KV_REST_API_URL y KV_REST_API_TOKEN, para guardar promos compartidas.'
+    };
+  }
+
+  if (!id) {
+    return { error: 'Falta el id de la promocion.' };
+  }
+
+  const current = await readPromos();
+  const nextPromos = current.promos.filter((item) => String(item.id) !== String(id));
+  await redisCommand(['SET', KEY, JSON.stringify(nextPromos)]);
+  return { ok: true };
+}
+
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
@@ -233,6 +271,16 @@ module.exports = async function handler(req, res) {
 
     if (req.method === 'PUT') {
       const result = await updatePromo(req.body || {});
+      if (result.error) {
+        res.status(400).json(result);
+        return;
+      }
+      res.status(200).json(result);
+      return;
+    }
+
+    if (req.method === 'DELETE') {
+      const result = await deletePromo(req.query?.id);
       if (result.error) {
         res.status(400).json(result);
         return;

@@ -51,6 +51,7 @@
     dialogBranches: document.getElementById("dialogBranches"),
     dialogClose: document.getElementById("dialogClose"),
     dialogDates: document.getElementById("dialogDates"),
+    dialogDelete: document.getElementById("dialogDelete"),
     dialogEdit: document.getElementById("dialogEdit"),
     dialogLink: document.getElementById("dialogLink"),
     dialogMeta: document.getElementById("dialogMeta"),
@@ -88,6 +89,7 @@
     els.closeAdmin.addEventListener("click", closeAdmin);
     els.dialogClose.addEventListener("click", () => els.dialog.close());
     els.dialogEdit.addEventListener("click", editDialogPromo);
+    els.dialogDelete.addEventListener("click", deleteDialogPromo);
     els.adminLoginForm.addEventListener("submit", unlockAdmin);
     els.form.addEventListener("submit", savePromo);
     els.cancelEditButton.addEventListener("click", resetPromoForm);
@@ -229,6 +231,7 @@
       els.dialogLink.hidden = true;
     }
     els.dialogEdit.hidden = !state.adminUnlocked;
+    els.dialogDelete.hidden = !state.adminUnlocked;
     els.dialog.showModal();
   }
 
@@ -237,6 +240,15 @@
     if (!promo || !state.adminUnlocked) return;
     els.dialog.close();
     openPromoEditor(promo);
+  }
+
+  async function deleteDialogPromo() {
+    const promo = state.promos.find((item) => item.id === els.dialog.dataset.promoId);
+    if (!promo || !state.adminUnlocked) return;
+    const confirmed = window.confirm(`¿Eliminar "${promo.title}"?`);
+    if (!confirmed) return;
+    els.dialog.close();
+    await deletePromo(promo.id);
   }
 
   async function savePromo(event) {
@@ -344,6 +356,16 @@
     return data.promo;
   }
 
+  async function deleteApiPromo(id) {
+    const response = await fetch(`/api/promos?id=${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      headers: { Accept: "application/json" },
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || `API delete failed: ${response.status}`);
+    return data;
+  }
+
   async function createSharePointItem(payload) {
     const digest = await requestDigest();
     const response = await fetch(`${siteUrl()}/_api/web/lists/getbytitle('${encodeURIComponent(LIST_TITLE)}')/items`, {
@@ -376,6 +398,21 @@
     });
     if (!response.ok) throw new Error(`SharePoint update failed: ${response.status}`);
     return promo;
+  }
+
+  async function deleteSharePointItem(id) {
+    const digest = await requestDigest();
+    const response = await fetch(`${siteUrl()}/_api/web/lists/getbytitle('${encodeURIComponent(LIST_TITLE)}')/items(${encodeURIComponent(id)})`, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        Accept: "application/json;odata=nometadata",
+        "IF-MATCH": "*",
+        "X-HTTP-Method": "DELETE",
+        "X-RequestDigest": digest,
+      },
+    });
+    if (!response.ok) throw new Error(`SharePoint delete failed: ${response.status}`);
   }
 
   async function requestDigest() {
@@ -417,6 +454,21 @@
     } catch (error) {
       console.error(error);
       setMessage("No se pudieron guardar los cambios.");
+    }
+  }
+
+  async function deletePromo(id) {
+    try {
+      setMessage("Eliminando promoción...");
+      if (state.apiEnabled) await deleteApiPromo(id);
+      else if (state.sharePointEnabled) await deleteSharePointItem(id);
+      state.promos = state.promos.filter((item) => item.id !== id);
+      resetPromoForm();
+      setMessage("Promoción eliminada.");
+      render();
+    } catch (error) {
+      console.error(error);
+      setMessage("No se pudo eliminar la promoción.");
     }
   }
 

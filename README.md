@@ -13,6 +13,7 @@ Funciones principales:
 - Crear promociones desde Admin.
 - Editar promociones desde el pop-up de detalle, solo si Admin esta logueado.
 - Mover promociones arrastrando la barra a otro dia, solo si Admin esta logueado.
+- Eliminar promociones desde el pop-up de detalle, solo si Admin esta logueado.
 - Guardar altas y ediciones via API en Vercel cuando hay Supabase/Redis configurado.
 
 ## Archivos principales
@@ -67,6 +68,16 @@ UPSTASH_REDIS_REST_TOKEN
 ```
 
 Sin esas variables, la app carga en modo demo y no persiste promos compartidas.
+
+## Smoke test de persistencia
+
+Cuando la app este deployada en Vercel con Supabase configurado, correr:
+
+```bash
+TEST_BASE_URL=https://tu-app.vercel.app node scripts/smoke-promos-api.mjs
+```
+
+El test crea una promo ficticia, verifica que se lea, la edita, verifica el cambio, la elimina y confirma que desaparezca. Si Supabase o las variables de entorno no estan bien, el test falla.
 
 Pasos:
 

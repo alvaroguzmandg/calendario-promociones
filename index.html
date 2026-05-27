@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Calendario de Promociones</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">Equipo comercial</p>
+        <h1>Calendario de promociones</h1>
+      </div>
+      <div class="header-actions">
+        <button class="icon-button" id="prevMonth" type="button" aria-label="Mes anterior">‹</button>
+        <button class="today-button" id="todayButton" type="button">Hoy</button>
+        <button class="icon-button" id="nextMonth" type="button" aria-label="Mes siguiente">›</button>
+        <button class="primary-button" id="adminToggle" type="button">Admin</button>
+      </div>
+    </header>
+
+    <main class="app-shell">
+      <section class="toolbar" aria-label="Filtros del calendario">
+        <div>
+          <h2 id="monthTitle">Mayo 2026</h2>
+        </div>
+        <div class="filters">
+          <label>
+            País
+            <select id="countryFilter">
+              <option value="all">Todos</option>
+              <option value="Argentina">Argentina</option>
+              <option value="Uruguay">Uruguay</option>
+            </select>
+          </label>
+          <label>
+            Canal
+            <select id="channelFilter">
+              <option value="all">Todos</option>
+              <option value="Locales">Locales</option>
+              <option value="Online">Online</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="legend" id="legend" aria-label="Referencias de color"></section>
+
+      <section class="calendar" aria-label="Calendario mensual">
+        <div class="weekdays">
+          <span>Lun</span>
+          <span>Mar</span>
+          <span>Mié</span>
+          <span>Jue</span>
+          <span>Vie</span>
+          <span>Sáb</span>
+          <span>Dom</span>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+      </section>
+    </main>
+
+    <aside class="admin-panel" id="adminPanel" aria-hidden="true">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow">Carga</p>
+          <h2>Nueva promoción</h2>
+        </div>
+        <button class="icon-button" id="closeAdmin" type="button" aria-label="Cerrar admin">×</button>
+      </div>
+      <form id="adminLoginForm" class="admin-login">
+        <label>
+          Usuario
+          <input id="adminUser" name="adminUser" autocomplete="username" required placeholder="admin" />
+        </label>
+        <label>
+          Contraseña
+          <input id="adminPassword" name="adminPassword" type="password" autocomplete="current-password" required placeholder="••••••••" />
+        </label>
+        <button class="primary-button full" type="submit">Ingresar</button>
+        <p class="form-message" id="loginMessage" role="status"></p>
+      </form>
+      <form id="promoForm" class="locked">
+        <label>
+          Título
+          <input id="promoTitle" name="title" required placeholder="10% extra Apple Childs" />
+        </label>
+        <div class="form-row">
+          <label>
+            Desde
+            <input id="promoStart" name="startDate" type="date" min="2026-01-01" max="2030-12-31" required />
+          </label>
+          <label>
+            Hasta
+            <input id="promoEnd" name="endDate" type="date" min="2026-01-01" max="2030-12-31" required />
+          </label>
+        </div>
+        <div class="form-row">
+          <label>
+            País
+            <select id="promoCountry" name="country" required>
+              <option>Argentina</option>
+              <option>Uruguay</option>
+            </select>
+          </label>
+          <label>
+            Canal
+            <select id="promoChannel" name="channel" required>
+              <option>Locales</option>
+              <option>Online</option>
+            </select>
+          </label>
+        </div>
+        <label>
+          Sucursales / alcance
+          <input id="promoBranches" name="branches" placeholder="Online, todas las sucursales, GBA, Montevideo..." />
+        </label>
+        <label>
+          Link SharePoint
+          <input id="promoLink" name="linkUrl" type="url" placeholder="https://..." />
+        </label>
+        <label>
+          Comentarios
+          <textarea id="promoNotes" name="notes" rows="4" placeholder="Condiciones, productos incluidos, excepciones..."></textarea>
+        </label>
+        <button class="primary-button full" type="submit">Guardar promoción</button>
+        <p class="form-message" id="formMessage" role="status"></p>
+      </form>
+    </aside>
+
+    <dialog id="promoDialog">
+      <article class="dialog-card">
+        <button class="icon-button dialog-close" id="dialogClose" type="button" aria-label="Cerrar">×</button>
+        <p class="eyebrow" id="dialogMeta"></p>
+        <h2 id="dialogTitle"></h2>
+        <dl class="detail-list">
+          <div>
+            <dt>Fechas</dt>
+            <dd id="dialogDates"></dd>
+          </div>
+          <div>
+            <dt>Alcance</dt>
+            <dd id="dialogBranches"></dd>
+          </div>
+          <div>
+            <dt>Notas</dt>
+            <dd id="dialogNotes"></dd>
+          </div>
+        </dl>
+        <a class="primary-button as-link" id="dialogLink" href="#" target="_blank" rel="noreferrer">Abrir archivo</a>
+      </article>
+    </dialog>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

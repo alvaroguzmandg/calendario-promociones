@@ -1,0 +1,18 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "calendario-promos-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/calendarioPromos/CalendarioPromosWebPart.js",
+          "manifest": "./src/webparts/calendarioPromos/CalendarioPromosWebPart.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {},
+  "localizedResources": {
+    "CalendarioPromosWebPartStrings": "lib/webparts/calendarioPromos/loc/{locale}.js"
+  }
+}

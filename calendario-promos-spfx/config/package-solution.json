@@ -1,0 +1,40 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "calendario-promos-client-side-solution",
+    "id": "9b25ecf0-5d1b-4f90-a82b-21d4fea5cd97",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "",
+      "websiteUrl": "",
+      "privacyUrl": "",
+      "termsOfUseUrl": "",
+      "mpnId": "Undefined-1.18.2"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "Calendario mensual de promociones comerciales"
+      },
+      "longDescription": {
+        "default": "Calendario mensual de promociones comerciales para el sitio CalendarioPromos"
+      },
+      "screenshotPaths": [],
+      "videoUrl": "",
+      "categories": []
+    },
+    "features": [
+      {
+        "title": "Calendario Promos",
+        "description": "Activa el web part Calendario Promos.",
+        "id": "5acb0300-5c20-44fc-9be7-456fab529662",
+        "version": "1.0.0.0"
+      }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/calendario-promos-spfx.sppkg"
+  }
+}

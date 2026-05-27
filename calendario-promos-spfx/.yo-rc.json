@@ -1,0 +1,25 @@
+{
+  "@microsoft/generator-sharepoint": {
+    "whichFolder": "subdir",
+    "solutionName": "calendario-promos-spfx",
+    "environment": "spo",
+    "packageManager": "npm",
+    "skipFeatureDeployment": true,
+    "componentType": "webpart",
+    "template": "none",
+    "componentName": "CalendarioPromos",
+    "componentDescription": "Calendario de promociones",
+    "plusBeta": false,
+    "isCreatingSolution": true,
+    "nodeVersion": "18.13.0",
+    "sdksVersions": {
+      "@microsoft/microsoft-graph-client": "3.0.2",
+      "@microsoft/teams-js": "2.12.0"
+    },
+    "version": "1.18.2",
+    "libraryName": "calendario-promos-spfx",
+    "libraryId": "9b25ecf0-5d1b-4f90-a82b-21d4fea5cd97",
+    "solutionShortDescription": "calendario-promos-spfx description",
+    "isDomainIsolated": false
+  }
+}

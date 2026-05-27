@@ -19,8 +19,10 @@
   const colorMap = {
     "Argentina|Locales": "var(--arg-locales)",
     "Argentina|Online": "var(--arg-online)",
+    "Argentina|Locales + Online": "var(--arg-locales-online)",
     "Uruguay|Locales": "var(--uru-locales)",
     "Uruguay|Online": "var(--uru-online)",
+    "Uruguay|Locales + Online": "var(--uru-locales-online)",
   };
 
   const demoPromos = [];

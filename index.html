@@ -65,7 +65,7 @@
       <div class="panel-header">
         <div>
           <p class="eyebrow">Carga</p>
-          <h2>Nueva promoción</h2>
+          <h2 id="adminPanelTitle">Nueva promoción</h2>
         </div>
         <button class="icon-button" id="closeAdmin" type="button" aria-label="Cerrar admin">×</button>
       </div>
@@ -125,6 +125,7 @@
           <textarea id="promoNotes" name="notes" rows="4" placeholder="Condiciones, productos incluidos, excepciones..."></textarea>
         </label>
         <button class="primary-button full" type="submit">Guardar promoción</button>
+        <button class="secondary-button full" id="cancelEditButton" type="button" hidden>Cancelar edición</button>
         <p class="form-message" id="formMessage" role="status"></p>
       </form>
     </aside>
@@ -148,7 +149,10 @@
             <dd id="dialogNotes"></dd>
           </div>
         </dl>
-        <a class="primary-button as-link" id="dialogLink" href="#" target="_blank" rel="noreferrer">Abrir archivo</a>
+        <div class="dialog-actions">
+          <button class="primary-button" id="dialogEdit" type="button" hidden>Editar</button>
+          <a class="primary-button as-link" id="dialogLink" href="#" target="_blank" rel="noreferrer">Abrir archivo</a>
+        </div>
       </article>
     </dialog>
 

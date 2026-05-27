@@ -8,6 +8,13 @@ Calendario comercial para ver y cargar promociones activas por rango de fechas. 
 
 La vista muestra promociones en calendario mensual entre el 1 de enero de 2026 y el 31 de diciembre de 2030, con filtros por pais/canal, detalle en modal y carga desde panel admin.
 
+Funciones principales:
+
+- Crear promociones desde Admin.
+- Editar promociones desde el pop-up de detalle, solo si Admin esta logueado.
+- Mover promociones arrastrando la barra a otro dia, solo si Admin esta logueado.
+- Guardar altas y ediciones via API en Vercel cuando hay Supabase/Redis configurado.
+
 ## Archivos principales
 
 - `index.html`, `styles.css`, `app.js`: version estatica separada.

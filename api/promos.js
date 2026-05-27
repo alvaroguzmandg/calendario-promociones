@@ -1,29 +1,6 @@
 const KEY = 'calendario-promos';
 
-const demoPromos = [
-  {
-    id: 'demo-1',
-    title: '10% extra Apple Childs',
-    startDate: '2026-05-26',
-    endDate: '2026-05-30',
-    country: 'Argentina',
-    channel: 'Locales',
-    branches: 'Todas las sucursales',
-    linkUrl: '',
-    notes: 'Ejemplo de carga para validar la vista mensual.'
-  },
-  {
-    id: 'demo-2',
-    title: 'Hot Sale accesorios',
-    startDate: '2026-05-25',
-    endDate: '2026-06-02',
-    country: 'Uruguay',
-    channel: 'Online',
-    branches: 'Ecommerce Uruguay',
-    linkUrl: '',
-    notes: 'Promo visible cruzando meses.'
-  }
-];
+const demoPromos = [];
 
 function redisConfig() {
   const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
@@ -132,6 +109,26 @@ async function writeSupabasePromo(promo) {
   return { promo: toClientPromo(rows[0]) };
 }
 
+async function updateSupabasePromo(promo) {
+  if (!promo.id) {
+    return { error: 'Falta el id de la promocion.' };
+  }
+
+  const rows = await supabaseRequest(`promos?id=eq.${encodeURIComponent(promo.id)}&select=id,title,start_date,end_date,country,channel,branches,link_url,notes`, {
+    method: 'PATCH',
+    headers: {
+      Prefer: 'return=representation'
+    },
+    body: JSON.stringify(toSupabaseRow(promo))
+  });
+
+  if (!rows[0]) {
+    return { error: 'No se encontro la promocion para actualizar.' };
+  }
+
+  return { promo: toClientPromo(rows[0]) };
+}
+
 async function readPromos() {
   const supabase = supabaseConfig();
   if (supabase.url && supabase.key) {
@@ -175,8 +172,41 @@ async function writePromo(promo) {
   return { promo: savedPromo };
 }
 
+async function updatePromo(promo) {
+  const supabase = supabaseConfig();
+  if (supabase.url && supabase.key) {
+    return updateSupabasePromo(promo);
+  }
+
+  const { token, url } = redisConfig();
+  if (!url || !token) {
+    return {
+      error: 'La API esta en modo demo. Configura SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY, o KV_REST_API_URL y KV_REST_API_TOKEN, para guardar promos compartidas.'
+    };
+  }
+
+  if (!promo.id) {
+    return { error: 'Falta el id de la promocion.' };
+  }
+
+  const current = await readPromos();
+  let found = false;
+  const nextPromos = current.promos.map((item) => {
+    if (String(item.id) !== String(promo.id)) return item;
+    found = true;
+    return { ...item, ...promo };
+  });
+
+  if (!found) {
+    return { error: 'No se encontro la promocion para actualizar.' };
+  }
+
+  await redisCommand(['SET', KEY, JSON.stringify(nextPromos)]);
+  return { promo: nextPromos.find((item) => String(item.id) === String(promo.id)) };
+}
+
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
@@ -198,6 +228,16 @@ module.exports = async function handler(req, res) {
         return;
       }
       res.status(201).json(result);
+      return;
+    }
+
+    if (req.method === 'PUT') {
+      const result = await updatePromo(req.body || {});
+      if (result.error) {
+        res.status(400).json(result);
+        return;
+      }
+      res.status(200).json(result);
       return;
     }
 

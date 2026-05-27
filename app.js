@@ -23,46 +23,27 @@
     "Uruguay|Online": "var(--uru-online)",
   };
 
-  const demoPromos = [
-    {
-      id: "demo-1",
-      title: "10% extra Apple Childs",
-      startDate: "2026-05-26",
-      endDate: "2026-05-30",
-      country: "Argentina",
-      channel: "Locales",
-      branches: "Todas las sucursales",
-      linkUrl: "",
-      notes: "Ejemplo de carga para validar la vista mensual.",
-    },
-    {
-      id: "demo-2",
-      title: "Hot Sale accesorios",
-      startDate: "2026-05-25",
-      endDate: "2026-06-02",
-      country: "Uruguay",
-      channel: "Online",
-      branches: "Ecommerce Uruguay",
-      linkUrl: "",
-      notes: "Promo visible cruzando meses.",
-    },
-  ];
+  const demoPromos = [];
 
   const state = {
     currentDate: clampMonth(new Date(2026, 4, 26)),
     adminUnlocked: sessionStorage.getItem("promoAdminUnlocked") === "true",
+    editingPromoId: null,
+    drag: null,
     promos: [],
-    apiEnabled: location.protocol.startsWith("http") && !location.hostname.includes("sharepoint.com"),
+    apiEnabled: location.protocol.startsWith("http") && !["localhost", "127.0.0.1", ""].includes(location.hostname) && !location.hostname.includes("sharepoint.com"),
     sharePointEnabled: Boolean(window._spPageContextInfo) || location.hostname.includes("sharepoint.com"),
   };
 
   const els = {
     adminLoginForm: document.getElementById("adminLoginForm"),
     adminPanel: document.getElementById("adminPanel"),
+    adminPanelTitle: document.getElementById("adminPanelTitle"),
     adminPassword: document.getElementById("adminPassword"),
     adminToggle: document.getElementById("adminToggle"),
     adminUser: document.getElementById("adminUser"),
     calendarGrid: document.getElementById("calendarGrid"),
+    cancelEditButton: document.getElementById("cancelEditButton"),
     channelFilter: document.getElementById("channelFilter"),
     closeAdmin: document.getElementById("closeAdmin"),
     countryFilter: document.getElementById("countryFilter"),
@@ -70,6 +51,7 @@
     dialogBranches: document.getElementById("dialogBranches"),
     dialogClose: document.getElementById("dialogClose"),
     dialogDates: document.getElementById("dialogDates"),
+    dialogEdit: document.getElementById("dialogEdit"),
     dialogLink: document.getElementById("dialogLink"),
     dialogMeta: document.getElementById("dialogMeta"),
     dialogNotes: document.getElementById("dialogNotes"),
@@ -105,23 +87,25 @@
     els.adminToggle.addEventListener("click", openAdmin);
     els.closeAdmin.addEventListener("click", closeAdmin);
     els.dialogClose.addEventListener("click", () => els.dialog.close());
+    els.dialogEdit.addEventListener("click", editDialogPromo);
     els.adminLoginForm.addEventListener("submit", unlockAdmin);
     els.form.addEventListener("submit", savePromo);
+    els.cancelEditButton.addEventListener("click", resetPromoForm);
   }
 
   async function loadPromos() {
     setMessage("Cargando promociones...");
-    if (!state.sharePointEnabled) {
-      state.promos = demoPromos;
-      setMessage("Modo demo local. En SharePoint se leerá la lista real.");
-      return;
-    }
-
     try {
       if (state.apiEnabled) {
         const data = await fetchApiPromos();
         state.promos = data.promos;
-        setMessage(data.mode === "shared" ? "" : "Modo demo. Configurá Vercel KV para guardar promos compartidas.");
+        setMessage(data.mode === "shared" ? "" : "Modo demo. Configurá Supabase para guardar promos compartidas.");
+        return;
+      }
+
+      if (!state.sharePointEnabled) {
+        state.promos = demoPromos;
+        setMessage("");
         return;
       }
 
@@ -130,7 +114,7 @@
       setMessage("");
     } catch (error) {
       state.promos = demoPromos;
-      setMessage("No se pudo leer SharePoint. Mostrando datos demo.");
+      setMessage("No se pudieron leer promociones.");
       console.error(error);
     }
   }
@@ -175,8 +159,12 @@
   function renderDay(date, dayPromos) {
     const day = document.createElement("div");
     day.className = "day";
+    day.dataset.date = toISODate(date);
     if (date.getMonth() !== state.currentDate.getMonth()) day.classList.add("outside-month");
     if (sameDay(date, new Date())) day.classList.add("today");
+    day.addEventListener("dragover", handleDayDragOver);
+    day.addEventListener("dragleave", handleDayDragLeave);
+    day.addEventListener("drop", handleDayDrop);
 
     const number = document.createElement("span");
     number.className = "day-number";
@@ -199,15 +187,20 @@
   function renderPromoChip(date, promo) {
     const chip = document.createElement("button");
     const starts = sameDay(parseDate(promo.startDate), date);
-    const beginsVisibleSegment = starts || date.getDay() === 0 || date.getDate() === 1;
+    const beginsVisibleSegment = starts || date.getDay() === 1 || date.getDate() === 1;
     chip.type = "button";
     chip.className = "promo-chip";
+    chip.dataset.promoId = promo.id;
+    chip.dataset.date = toISODate(date);
     chip.style.background = colorForPromo(promo);
     chip.textContent = beginsVisibleSegment ? promo.title : "";
     chip.setAttribute("aria-label", promo.title);
     chip.title = promo.title;
+    chip.draggable = state.adminUnlocked;
     if (parseDate(promo.startDate) < stripTime(date)) chip.classList.add("continues-left");
     if (parseDate(promo.endDate) > stripTime(date)) chip.classList.add("continues-right");
+    chip.addEventListener("dragstart", handlePromoDragStart);
+    chip.addEventListener("dragend", handlePromoDragEnd);
     chip.addEventListener("click", () => openPromoDialog(promo));
     return chip;
   }
@@ -223,6 +216,7 @@
   }
 
   function openPromoDialog(promo) {
+    els.dialog.dataset.promoId = promo.id;
     els.dialogMeta.textContent = `${promo.country} · ${promo.channel}`;
     els.dialogTitle.textContent = promo.title;
     els.dialogDates.textContent = `${formatDate(promo.startDate)} al ${formatDate(promo.endDate)}`;
@@ -234,16 +228,30 @@
     } else {
       els.dialogLink.hidden = true;
     }
+    els.dialogEdit.hidden = !state.adminUnlocked;
     els.dialog.showModal();
+  }
+
+  function editDialogPromo() {
+    const promo = state.promos.find((item) => item.id === els.dialog.dataset.promoId);
+    if (!promo || !state.adminUnlocked) return;
+    els.dialog.close();
+    openPromoEditor(promo);
   }
 
   async function savePromo(event) {
     event.preventDefault();
     const formData = new FormData(els.form);
     const promo = Object.fromEntries(formData.entries());
+    if (state.editingPromoId) promo.id = state.editingPromoId;
 
     if (parseDate(promo.endDate) < parseDate(promo.startDate)) {
       setMessage("La fecha final no puede ser anterior a la inicial.");
+      return;
+    }
+
+    if (state.editingPromoId) {
+      await updatePromo(promo, "Promoción actualizada.");
       return;
     }
 
@@ -253,7 +261,7 @@
           setMessage("Guardando...");
           const saved = await createApiPromo(promo);
           state.promos.push(saved);
-          els.form.reset();
+          resetPromoForm();
           setMessage("Promoción guardada.");
           render();
         } catch (error) {
@@ -265,7 +273,7 @@
 
       promo.id = `local-${Date.now()}`;
       state.promos.push(promo);
-      els.form.reset();
+      resetPromoForm();
       setMessage("Guardado en modo demo. En SharePoint quedará compartido para el equipo.");
       render();
       return;
@@ -275,7 +283,7 @@
       setMessage("Guardando en SharePoint...");
       const item = await createSharePointItem(toSharePointItem(promo));
       state.promos.push(fromSharePointItem(item));
-      els.form.reset();
+      resetPromoForm();
       setMessage("Promoción guardada.");
       render();
     } catch (error) {
@@ -318,6 +326,20 @@
     return data.promo;
   }
 
+  async function updateApiPromo(promo) {
+    const response = await fetch("/api/promos", {
+      method: "PUT",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(promo),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || `API update failed: ${response.status}`);
+    return data.promo;
+  }
+
   async function createSharePointItem(payload) {
     const digest = await requestDigest();
     const response = await fetch(`${siteUrl()}/_api/web/lists/getbytitle('${encodeURIComponent(LIST_TITLE)}')/items`, {
@@ -332,6 +354,24 @@
     });
     if (!response.ok) throw new Error(`SharePoint create failed: ${response.status}`);
     return response.json();
+  }
+
+  async function updateSharePointItem(promo) {
+    const digest = await requestDigest();
+    const response = await fetch(`${siteUrl()}/_api/web/lists/getbytitle('${encodeURIComponent(LIST_TITLE)}')/items(${encodeURIComponent(promo.id)})`, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        Accept: "application/json;odata=nometadata",
+        "Content-Type": "application/json;odata=nometadata",
+        "IF-MATCH": "*",
+        "X-HTTP-Method": "MERGE",
+        "X-RequestDigest": digest,
+      },
+      body: JSON.stringify(toSharePointItem(promo)),
+    });
+    if (!response.ok) throw new Error(`SharePoint update failed: ${response.status}`);
+    return promo;
   }
 
   async function requestDigest() {
@@ -357,6 +397,100 @@
       linkUrl: item[SHAREPOINT_FIELDS.linkUrl]?.Url || item[SHAREPOINT_FIELDS.linkUrl] || "",
       notes: item[SHAREPOINT_FIELDS.notes] || "",
     };
+  }
+
+  async function updatePromo(promo, successMessage = "Promoción actualizada.") {
+    try {
+      setMessage("Guardando cambios...");
+      let saved = { ...promo };
+      if (state.apiEnabled) saved = await updateApiPromo(promo);
+      else if (state.sharePointEnabled) saved = await updateSharePointItem(promo);
+
+      state.promos = state.promos.map((item) => (item.id === saved.id ? saved : item));
+      resetPromoForm();
+      setMessage(successMessage);
+      render();
+    } catch (error) {
+      console.error(error);
+      setMessage("No se pudieron guardar los cambios.");
+    }
+  }
+
+  function openPromoEditor(promo) {
+    state.editingPromoId = promo.id;
+    els.adminPanelTitle.textContent = "Editar promoción";
+    els.cancelEditButton.hidden = false;
+    setMessage("");
+    fillPromoForm(promo);
+    openAdmin();
+  }
+
+  function fillPromoForm(promo) {
+    els.form.elements.title.value = promo.title || "";
+    els.form.elements.startDate.value = promo.startDate || "";
+    els.form.elements.endDate.value = promo.endDate || "";
+    els.form.elements.country.value = promo.country || "Argentina";
+    els.form.elements.channel.value = promo.channel || "Locales";
+    els.form.elements.branches.value = promo.branches || "";
+    els.form.elements.linkUrl.value = promo.linkUrl || "";
+    els.form.elements.notes.value = promo.notes || "";
+  }
+
+  function resetPromoForm() {
+    state.editingPromoId = null;
+    els.adminPanelTitle.textContent = "Nueva promoción";
+    els.cancelEditButton.hidden = true;
+    els.form.reset();
+  }
+
+  function handlePromoDragStart(event) {
+    if (!state.adminUnlocked) {
+      event.preventDefault();
+      return;
+    }
+    const chip = event.currentTarget;
+    state.drag = {
+      promoId: chip.dataset.promoId,
+      fromDate: chip.dataset.date,
+    };
+    chip.classList.add("dragging");
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", JSON.stringify(state.drag));
+  }
+
+  function handlePromoDragEnd(event) {
+    event.currentTarget.classList.remove("dragging");
+    document.querySelectorAll(".day.drop-target").forEach((day) => day.classList.remove("drop-target"));
+    state.drag = null;
+  }
+
+  function handleDayDragOver(event) {
+    if (!state.adminUnlocked || !state.drag) return;
+    event.preventDefault();
+    event.currentTarget.classList.add("drop-target");
+    event.dataTransfer.dropEffect = "move";
+  }
+
+  function handleDayDragLeave(event) {
+    event.currentTarget.classList.remove("drop-target");
+  }
+
+  async function handleDayDrop(event) {
+    event.preventDefault();
+    event.currentTarget.classList.remove("drop-target");
+    if (!state.adminUnlocked || !state.drag) return;
+
+    const promo = state.promos.find((item) => item.id === state.drag.promoId);
+    const targetDate = event.currentTarget.dataset.date;
+    if (!promo || !targetDate) return;
+
+    const offset = daysBetween(parseDate(state.drag.fromDate), parseDate(targetDate));
+    const moved = {
+      ...promo,
+      startDate: toISODate(addDays(parseDate(promo.startDate), offset)),
+      endDate: toISODate(addDays(parseDate(promo.endDate), offset)),
+    };
+    await updatePromo(moved, "Promoción movida.");
   }
 
   function toSharePointItem(promo) {
@@ -444,6 +578,18 @@
   function parseDate(value) {
     const [year, month, day] = String(value).slice(0, 10).split("-").map(Number);
     return new Date(year, month - 1, day);
+  }
+
+  function toISODate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  function daysBetween(from, to) {
+    const dayMs = 24 * 60 * 60 * 1000;
+    return Math.round((stripTime(to) - stripTime(from)) / dayMs);
   }
 
   function stripTime(date) {

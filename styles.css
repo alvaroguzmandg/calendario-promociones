@@ -104,6 +104,16 @@ h2 {
   font-weight: 800;
 }
 
+.secondary-button {
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 800;
+}
+
 .primary-button:hover {
   background: var(--primary-strong);
 }
@@ -259,6 +269,23 @@ textarea {
   overflow: hidden;
   text-overflow: ellipsis;
   cursor: pointer;
+  transition: opacity 120ms ease, transform 120ms ease;
+  margin-left: -7px;
+  margin-right: -7px;
+  width: calc(100% + 14px);
+}
+
+.promo-chip[draggable="true"] {
+  cursor: grab;
+}
+
+.promo-chip.dragging {
+  opacity: 0.55;
+  transform: scale(0.98);
+}
+
+.day.drop-target {
+  background: #eef9f7;
 }
 
 .promo-chip.continues-left {
@@ -361,6 +388,12 @@ dialog::backdrop {
   display: grid;
   grid-template-columns: 110px 1fr;
   gap: 14px;
+}
+
+.dialog-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 dt {

@@ -31,6 +31,7 @@
     editingPromoId: null,
     drag: null,
     pointerDrag: null,
+    resize: null,
     suppressNextClick: false,
     promos: [],
     apiEnabled: location.protocol.startsWith("http") && !["localhost", "127.0.0.1", ""].includes(location.hostname) && !location.hostname.includes("sharepoint.com"),
@@ -197,12 +198,23 @@
     chip.dataset.promoId = promo.id;
     chip.dataset.date = toISODate(date);
     chip.style.background = colorForPromo(promo);
-    chip.textContent = beginsVisibleSegment ? promo.title : "";
     chip.setAttribute("aria-label", promo.title);
     chip.title = promo.title;
     chip.draggable = state.adminUnlocked;
     if (parseDate(promo.startDate) < stripTime(date)) chip.classList.add("continues-left");
     if (parseDate(promo.endDate) > stripTime(date)) chip.classList.add("continues-right");
+    if (state.adminUnlocked && starts) {
+      chip.classList.add("has-resize-start");
+      chip.appendChild(renderResizeHandle("start"));
+    }
+    const label = document.createElement("span");
+    label.className = "promo-label";
+    label.textContent = beginsVisibleSegment ? promo.title : "";
+    chip.appendChild(label);
+    if (state.adminUnlocked && sameDay(parseDate(promo.endDate), date)) {
+      chip.classList.add("has-resize-end");
+      chip.appendChild(renderResizeHandle("end"));
+    }
     chip.addEventListener("dragstart", handlePromoDragStart);
     chip.addEventListener("dragend", handlePromoDragEnd);
     chip.addEventListener("pointerdown", handlePromoPointerDown);
@@ -216,6 +228,16 @@
       openPromoDialog(promo);
     });
     return chip;
+  }
+
+  function renderResizeHandle(edge) {
+    const handle = document.createElement("span");
+    handle.className = `promo-resize-handle ${edge}`;
+    handle.dataset.resizeEdge = edge;
+    handle.setAttribute("aria-hidden", "true");
+    handle.addEventListener("dragstart", (event) => event.preventDefault());
+    handle.addEventListener("pointerdown", handleResizePointerDown);
+    return handle;
   }
 
   function filteredPromos() {
@@ -507,7 +529,7 @@
   }
 
   function handlePromoDragStart(event) {
-    if (!state.adminUnlocked) {
+    if (!state.adminUnlocked || state.resize || event.target.closest("[data-resize-edge]")) {
       event.preventDefault();
       return;
     }
@@ -558,6 +580,7 @@
 
   function handlePromoPointerDown(event) {
     if (!state.adminUnlocked || event.button !== 0) return;
+    if (event.target.closest("[data-resize-edge]")) return;
     const chip = event.currentTarget;
     state.pointerDrag = {
       active: false,
@@ -618,6 +641,76 @@
       endDate: toISODate(addDays(parseDate(promo.endDate), offset)),
     };
     await updatePromo(moved, "Promoción movida.");
+  }
+
+  function handleResizePointerDown(event) {
+    if (!state.adminUnlocked || event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+
+    const handle = event.currentTarget;
+    const chip = handle.closest(".promo-chip");
+    if (!chip) return;
+
+    state.resize = {
+      active: false,
+      chip,
+      edge: handle.dataset.resizeEdge,
+      fromDate: chip.dataset.date,
+      promoId: chip.dataset.promoId,
+      startX: event.clientX,
+      startY: event.clientY,
+    };
+    chip.setPointerCapture?.(event.pointerId);
+    document.addEventListener("pointermove", handleResizePointerMove);
+    document.addEventListener("pointerup", handleResizePointerUp, { once: true });
+  }
+
+  function handleResizePointerMove(event) {
+    if (!state.resize) return;
+    const dx = event.clientX - state.resize.startX;
+    const dy = event.clientY - state.resize.startY;
+    if (!state.resize.active && Math.hypot(dx, dy) < 6) return;
+
+    state.resize.active = true;
+    state.resize.chip.classList.add("resizing");
+
+    document.querySelectorAll(".day.drop-target").forEach((day) => day.classList.remove("drop-target"));
+    const targetDay = document.elementFromPoint(event.clientX, event.clientY)?.closest(".day");
+    if (targetDay) targetDay.classList.add("drop-target");
+  }
+
+  async function handleResizePointerUp(event) {
+    document.removeEventListener("pointermove", handleResizePointerMove);
+    const resize = state.resize;
+    state.resize = null;
+    document.querySelectorAll(".day.drop-target").forEach((day) => day.classList.remove("drop-target"));
+    if (!resize) return;
+
+    resize.chip.classList.remove("resizing");
+    state.suppressNextClick = true;
+    window.setTimeout(() => {
+      state.suppressNextClick = false;
+    }, 0);
+
+    if (!resize.active) return;
+
+    const targetDay = document.elementFromPoint(event.clientX, event.clientY)?.closest(".day");
+    if (!targetDay?.dataset.date) return;
+
+    const promo = state.promos.find((item) => item.id === resize.promoId);
+    if (!promo) return;
+
+    const changed = resize.edge === "start"
+      ? { ...promo, startDate: targetDay.dataset.date }
+      : { ...promo, endDate: targetDay.dataset.date };
+
+    if (parseDate(changed.startDate) < MIN_DATE) changed.startDate = toISODate(MIN_DATE);
+    if (parseDate(changed.endDate) > MAX_DATE) changed.endDate = toISODate(MAX_DATE);
+    if (parseDate(changed.startDate) > parseDate(changed.endDate)) return;
+    if (changed.startDate === promo.startDate && changed.endDate === promo.endDate) return;
+
+    await updatePromo(changed, "Duración de promoción actualizada.");
   }
 
   function toSharePointItem(promo) {

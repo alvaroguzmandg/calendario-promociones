@@ -265,7 +265,9 @@ textarea {
 }
 
 .promo-chip {
-  display: block;
+  position: relative;
+  display: flex;
+  align-items: center;
   width: 100%;
   min-height: 22px;
   border: 0;
@@ -286,6 +288,21 @@ textarea {
   width: calc(100% + 14px);
 }
 
+.promo-label {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.promo-chip.has-resize-start {
+  padding-left: 17px;
+}
+
+.promo-chip.has-resize-end {
+  padding-right: 17px;
+}
+
 .promo-chip[draggable="true"] {
   cursor: grab;
   touch-action: none;
@@ -296,6 +313,45 @@ textarea {
   position: relative;
   z-index: 5;
   opacity: 0.55;
+}
+
+.promo-chip.resizing {
+  position: relative;
+  z-index: 6;
+  opacity: 0.72;
+  outline: 2px solid rgba(255, 255, 255, 0.85);
+  outline-offset: -3px;
+}
+
+.promo-resize-handle {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  width: 10px;
+  border-radius: 999px;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.promo-resize-handle::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 12px;
+  border-left: 1px solid rgba(255, 255, 255, 0.9);
+  border-right: 1px solid rgba(255, 255, 255, 0.9);
+  transform: translate(-50%, -50%);
+  opacity: 0.75;
+}
+
+.promo-resize-handle.start {
+  left: 2px;
+}
+
+.promo-resize-handle.end {
+  right: 2px;
 }
 
 .day.drop-target {

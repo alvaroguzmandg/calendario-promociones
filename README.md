@@ -79,6 +79,14 @@ TEST_BASE_URL=https://tu-app.vercel.app node scripts/smoke-promos-api.mjs
 
 El test crea una promo ficticia, verifica que se lea, la edita, verifica el cambio, la elimina y confirma que desaparezca. Si Supabase o las variables de entorno no estan bien, el test falla.
 
+Diagnostico rapido de variables:
+
+```text
+https://tu-app.vercel.app/api/promos?health=1
+```
+
+Debe responder `provider: "supabase"` y `hasSupabase: true`. Si responde `demo`, Vercel no esta recibiendo las variables o falta redeploy.
+
 Pasos:
 
 1. Importar el repo `alvaroguzmandg/calendario-promociones` en Vercel.

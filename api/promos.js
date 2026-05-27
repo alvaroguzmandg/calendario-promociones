@@ -15,6 +15,16 @@ function supabaseConfig() {
   };
 }
 
+function providerStatus() {
+  const supabase = supabaseConfig();
+  const redis = redisConfig();
+  return {
+    hasRedis: Boolean(redis.url && redis.token),
+    hasSupabase: Boolean(supabase.url && supabase.key),
+    provider: supabase.url && supabase.key ? 'supabase' : redis.url && redis.token ? 'redis' : 'demo'
+  };
+}
+
 async function redisCommand(command) {
   const { token, url } = redisConfig();
   if (!url || !token) {
@@ -254,6 +264,10 @@ module.exports = async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
+      if (req.query?.health === '1') {
+        res.status(200).json(providerStatus());
+        return;
+      }
       const data = await readPromos();
       res.status(200).json(data);
       return;

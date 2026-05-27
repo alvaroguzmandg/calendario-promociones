@@ -288,11 +288,14 @@ textarea {
 
 .promo-chip[draggable="true"] {
   cursor: grab;
+  touch-action: none;
+  user-select: none;
 }
 
 .promo-chip.dragging {
+  position: relative;
+  z-index: 5;
   opacity: 0.55;
-  transform: scale(0.98);
 }
 
 .day.drop-target {

@@ -295,11 +295,14 @@ textarea {
 
 .promo-chip[draggable="true"] {
   cursor: grab;
+  touch-action: none;
+  user-select: none;
 }
 
 .promo-chip.dragging {
+  position: relative;
+  z-index: 5;
   opacity: 0.55;
-  transform: scale(0.98);
 }
 
 .day.drop-target {
@@ -620,6 +623,8 @@ dd {
     adminUnlocked: sessionStorage.getItem("promoAdminUnlocked") === "true",
     editingPromoId: null,
     drag: null,
+    pointerDrag: null,
+    suppressNextClick: false,
     promos: [],
     apiEnabled: location.protocol.startsWith("http") && !["localhost", "127.0.0.1", ""].includes(location.hostname) && !location.hostname.includes("sharepoint.com"),
     sharePointEnabled: Boolean(window._spPageContextInfo) || location.hostname.includes("sharepoint.com"),
@@ -793,7 +798,16 @@ dd {
     if (parseDate(promo.endDate) > stripTime(date)) chip.classList.add("continues-right");
     chip.addEventListener("dragstart", handlePromoDragStart);
     chip.addEventListener("dragend", handlePromoDragEnd);
-    chip.addEventListener("click", () => openPromoDialog(promo));
+    chip.addEventListener("pointerdown", handlePromoPointerDown);
+    chip.addEventListener("click", (event) => {
+      if (state.suppressNextClick) {
+        event.preventDefault();
+        event.stopPropagation();
+        state.suppressNextClick = false;
+        return;
+      }
+      openPromoDialog(promo);
+    });
     return chip;
   }
 
@@ -1131,6 +1145,70 @@ dd {
     if (!promo || !targetDate) return;
 
     const offset = daysBetween(parseDate(state.drag.fromDate), parseDate(targetDate));
+    const moved = {
+      ...promo,
+      startDate: toISODate(addDays(parseDate(promo.startDate), offset)),
+      endDate: toISODate(addDays(parseDate(promo.endDate), offset)),
+    };
+    await updatePromo(moved, "Promoción movida.");
+  }
+
+  function handlePromoPointerDown(event) {
+    if (!state.adminUnlocked || event.button !== 0) return;
+    const chip = event.currentTarget;
+    state.pointerDrag = {
+      active: false,
+      chip,
+      fromDate: chip.dataset.date,
+      promoId: chip.dataset.promoId,
+      startX: event.clientX,
+      startY: event.clientY,
+    };
+    chip.setPointerCapture?.(event.pointerId);
+    document.addEventListener("pointermove", handlePromoPointerMove);
+    document.addEventListener("pointerup", handlePromoPointerUp, { once: true });
+  }
+
+  function handlePromoPointerMove(event) {
+    if (!state.pointerDrag) return;
+    const dx = event.clientX - state.pointerDrag.startX;
+    const dy = event.clientY - state.pointerDrag.startY;
+    if (!state.pointerDrag.active && Math.hypot(dx, dy) < 8) return;
+
+    state.pointerDrag.active = true;
+    state.pointerDrag.chip.classList.add("dragging");
+    state.pointerDrag.chip.style.transform = `translate(${dx}px, ${dy}px) scale(0.98)`;
+
+    document.querySelectorAll(".day.drop-target").forEach((day) => day.classList.remove("drop-target"));
+    const targetDay = document.elementFromPoint(event.clientX, event.clientY)?.closest(".day");
+    if (targetDay) targetDay.classList.add("drop-target");
+  }
+
+  async function handlePromoPointerUp(event) {
+    document.removeEventListener("pointermove", handlePromoPointerMove);
+    const drag = state.pointerDrag;
+    state.pointerDrag = null;
+    document.querySelectorAll(".day.drop-target").forEach((day) => day.classList.remove("drop-target"));
+    if (!drag) return;
+
+    drag.chip.classList.remove("dragging");
+    drag.chip.style.transform = "";
+    if (!drag.active) return;
+
+    state.suppressNextClick = true;
+    window.setTimeout(() => {
+      state.suppressNextClick = false;
+    }, 0);
+
+    const targetDay = document.elementFromPoint(event.clientX, event.clientY)?.closest(".day");
+    if (!targetDay?.dataset.date) return;
+
+    const promo = state.promos.find((item) => item.id === drag.promoId);
+    if (!promo) return;
+
+    const offset = daysBetween(parseDate(drag.fromDate), parseDate(targetDay.dataset.date));
+    if (offset === 0) return;
+
     const moved = {
       ...promo,
       startDate: toISODate(addDays(parseDate(promo.startDate), offset)),

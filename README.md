@@ -20,7 +20,7 @@ Funciones principales:
 
 - `index.html`, `styles.css`, `app.js`: version estatica separada.
 - `calendario-promos-standalone.html`: version estatica autocontenida.
-- `api/promos.js`: API serverless para Vercel con persistencia en Redis REST compatible con Vercel KV / Upstash.
+- `api/promos.js`: API serverless para Vercel con persistencia en Supabase o Redis REST compatible con Vercel KV / Upstash.
 - `vercel.json`: configuracion de deploy Vercel.
 - `calendario-promos-spfx/`: proyecto SharePoint Framework.
 - `calendario-promos-spfx/sharepoint/solution/calendario-promos-spfx.sppkg`: paquete instalable.
@@ -38,6 +38,8 @@ Variables de entorno esperadas en Vercel:
 SUPABASE_URL
 SUPABASE_SERVICE_ROLE_KEY
 ```
+
+`SUPABASE_URL` puede ser la Project URL (`https://xxxx.supabase.co`) o la REST URL (`https://xxxx.supabase.co/rest/v1`). La API normaliza ambas.
 
 Crear esta tabla en Supabase SQL Editor:
 

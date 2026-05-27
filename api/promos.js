@@ -15,13 +15,21 @@ function supabaseConfig() {
   };
 }
 
+function supabaseRestUrl() {
+  const { url } = supabaseConfig();
+  if (!url) return '';
+  const trimmed = url.replace(/\/$/, '');
+  return trimmed.endsWith('/rest/v1') ? trimmed : `${trimmed}/rest/v1`;
+}
+
 function providerStatus() {
   const supabase = supabaseConfig();
   const redis = redisConfig();
   return {
     hasRedis: Boolean(redis.url && redis.token),
     hasSupabase: Boolean(supabase.url && supabase.key),
-    provider: supabase.url && supabase.key ? 'supabase' : redis.url && redis.token ? 'redis' : 'demo'
+    provider: supabase.url && supabase.key ? 'supabase' : redis.url && redis.token ? 'redis' : 'demo',
+    supabaseUrlFormat: supabase.url?.replace(/\/$/, '').endsWith('/rest/v1') ? 'rest' : supabase.url ? 'project' : 'missing'
   };
 }
 
@@ -80,7 +88,7 @@ async function supabaseRequest(path, options = {}) {
     throw new Error('Missing Supabase environment variables.');
   }
 
-  const response = await fetch(`${url.replace(/\/$/, '')}/rest/v1/${path}`, {
+  const response = await fetch(`${supabaseRestUrl()}/${path}`, {
     ...options,
     headers: {
       apikey: key,

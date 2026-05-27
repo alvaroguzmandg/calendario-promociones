@@ -289,11 +289,7 @@
           render();
         } catch (error) {
           console.error(error);
-          promo.id = `local-${Date.now()}`;
-          state.promos.push(promo);
-          resetPromoForm();
-          setMessage("Guardado solo en esta sesión. Configurá Supabase para que sea compartido.");
-          render();
+          setMessage(`No se pudo guardar en Supabase: ${error.message}`);
         }
         return;
       }
@@ -464,7 +460,7 @@
       render();
     } catch (error) {
       console.error(error);
-      setMessage("No se pudieron guardar los cambios.");
+      setMessage(`No se pudieron guardar los cambios: ${error.message}`);
     }
   }
 
@@ -479,7 +475,7 @@
       render();
     } catch (error) {
       console.error(error);
-      setMessage("No se pudo eliminar la promoción.");
+      setMessage(`No se pudo eliminar la promoción: ${error.message}`);
     }
   }
 

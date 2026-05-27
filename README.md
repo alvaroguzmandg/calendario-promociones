@@ -79,6 +79,8 @@ TEST_BASE_URL=https://tu-app.vercel.app node scripts/smoke-promos-api.mjs
 
 El test crea una promo ficticia, verifica que se lea, la edita, verifica el cambio, la elimina y confirma que desaparezca. Si Supabase o las variables de entorno no estan bien, el test falla.
 
+En produccion, si la API falla al guardar, la app muestra el error real de Supabase y no hace fallback a guardado local. El fallback local queda solo para pruebas en `localhost`.
+
 Diagnostico rapido de variables:
 
 ```text

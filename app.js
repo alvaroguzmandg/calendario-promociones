@@ -266,7 +266,11 @@
           render();
         } catch (error) {
           console.error(error);
-          setMessage("No se pudo guardar. Configurá Vercel KV para persistencia compartida.");
+          promo.id = `local-${Date.now()}`;
+          state.promos.push(promo);
+          resetPromoForm();
+          setMessage("Guardado solo en esta sesión. Configurá Supabase para que sea compartido.");
+          render();
         }
         return;
       }

@@ -88,15 +88,21 @@ async function supabaseRequest(path, options = {}) {
     throw new Error('Missing Supabase environment variables.');
   }
 
-  const response = await fetch(`${supabaseRestUrl()}/${path}`, {
-    ...options,
-    headers: {
-      apikey: key,
-      Authorization: `Bearer ${key}`,
-      'Content-Type': 'application/json',
-      ...(options.headers || {})
-    }
-  });
+  let response;
+  try {
+    response = await fetch(`${supabaseRestUrl()}/${path}`, {
+      ...options,
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+      }
+    });
+  } catch (error) {
+    const cause = error.cause?.message ? ` (${error.cause.message})` : '';
+    throw new Error(`Supabase fetch failed: ${error.message}${cause}`);
+  }
 
   if (!response.ok) {
     const errorText = await response.text();

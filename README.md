@@ -83,6 +83,22 @@ El test crea una promo ficticia, verifica que se lea, la edita, verifica el camb
 
 En produccion, si la API falla al guardar, la app muestra el error real de Supabase y no hace fallback a guardado local. El fallback local queda solo para pruebas en `localhost`.
 
+## Importar promociones Argentina julio/agosto 2026
+
+Para cargar el plan comercial agrupado desde la captura:
+
+```bash
+BASE_URL=https://calendario-promociones.vercel.app node scripts/import-argentina-july-2026-promos.mjs
+```
+
+Si la API no puede leer promociones pero queres intentar crear directo:
+
+```bash
+BASE_URL=https://calendario-promociones.vercel.app node scripts/import-argentina-july-2026-promos.mjs --force
+```
+
+Tambien esta disponible `scripts/import-argentina-july-2026-promos.sql` para pegarlo directo en Supabase SQL Editor. Es idempotente: no duplica promos con el mismo titulo, rango, pais y canal.
+
 Diagnostico rapido de variables:
 
 ```text
